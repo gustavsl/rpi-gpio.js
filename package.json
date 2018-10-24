@@ -1,11 +1,12 @@
 {
-  "name": "rpi-gpio",
+  "name": "tdx-gpio",
   "version": "1.0.0",
-  "description": "Control Raspberry Pi GPIO pins with node.js",
-  "main": "rpi-gpio.js",
+  "description": "Control Toradex GPIO pins with node.js",
+  "main": "tdx-gpio.js",
   "keywords:": [
-    "raspberry",
-    "pi",
+    "toradex",
+    "colibri",
+    "apalis",
     "gpio"
   ],
   "directories": {
@@ -25,9 +26,9 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/JamesBarwell/rpi-gpio.js.git"
+    "url": "https://github.com/gustavsl/tdx-gpio.js.git"
   },
-  "author": "James Barwell <jb@jamesbarwell.co.uk>",
+  "author": "Gustavo Leal <gustavo.leal@toradex.com>",
   "license": "MIT",
   "readmeFilename": "README.md",
   "dependencies": {

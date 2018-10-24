@@ -2,92 +2,119 @@ var fs           = require('fs');
 var util         = require('util');
 var EventEmitter = require('events').EventEmitter;
 var async        = require('async');
-var debug        = require('debug')('rpi-gpio');
+var debug        = require('debug')('tdx-gpio');
 var Epoll        = require('epoll').Epoll;
 var Promise      = require('promise');
 
+//  TODO: other boards
+
 var PATH = '/sys/class/gpio';
 var PINS = {
-    v1: {
-        // 1: 3.3v
-        // 2: 5v
-        '3':  0,
-        // 4: 5v
-        '5':  1,
-        // 6: ground
-        '7':  4,
-        '8':  14,
-        // 9: ground
-        '10': 15,
-        '11': 17,
-        '12': 18,
-        '13': 21,
-        // 14: ground
-        '15': 22,
-        '16': 23,
-        // 17: 3.3v
-        '18': 24,
-        '19': 10,
-        // 20: ground
-        '21': 9,
-        '22': 25,
-        '23': 11,
-        '24': 8,
-        // 25: ground
-        '26': 7
-    },
-    v2: {
-        // 1: 3.3v
-        // 2: 5v
-        '3':  2,
-        // 4: 5v
-        '5':  3,
-        // 6: ground
-        '7':  4,
-        '8':  14,
-        // 9: ground
-        '10': 15,
-        '11': 17,
-        '12': 18,
-        '13': 27,
-        // 14: ground
-        '15': 22,
-        '16': 23,
-        // 17: 3.3v
-        '18': 24,
-        '19': 10,
-        // 20: ground
-        '21': 9,
-        '22': 25,
-        '23': 11,
-        '24': 8,
-        // 25: ground
-        '26': 7,
-
-        // Model B+ pins
-        // 27: ID_SD
-        // 28: ID_SC
-        '29': 5,
-        // 30: ground
-        '31': 6,
-        '32': 12,
-        '33': 13,
-        // 34: ground
-        '35': 19,
-        '36': 16,
-        '37': 26,
-        '38': 20,
-        // 39: ground
-        '40': 21
+    colibri_imx6ull: {
+        'SODIMM_2': 9,
+        'SODIMM_4': 8,
+        'SODIMM_6': 1,
+        'SODIMM_8': 0,
+        'SODIMM_19': 4,
+        'SODIMM_21': 5,
+        'SODIMM_23': 12,
+        'SODIMM_25': 18,
+        'SODIMM_27': 19,
+        'SODIMM_28': 112,
+        'SODIMM_29': 87,
+        'SODIMM_30': 37,
+        'SODIMM_31': 13,
+        'SODIMM_32': 22,
+        'SODIMM_33': 16,
+        'SODIMM_34': 23,
+        'SODIMM_35': 17,
+        'SODIMM_36': 20,
+        'SODIMM_37': 88,
+        'SODIMM_38': 21,
+        'SODIMM_43': 128,
+        'SODIMM_44': 65,
+        'SODIMM_45': 129,
+        'SODIMM_46': 76,
+        'SODIMM_47': 49,
+        'SODIMM_48': 78,
+        'SODIMM_49': 51,
+        'SODIMM_50': 80,
+        'SODIMM_51': 52,
+        'SODIMM_52': 81,
+        'SODIMM_53': 53,
+        'SODIMM_54': 82,
+        'SODIMM_55': 32,
+        'SODIMM_56': 64,
+        'SODIMM_57': 85,
+        'SODIMM_58': 72,
+        'SODIMM_59': 107,
+        'SODIMM_60': 71,
+        'SODIMM_61': 86,
+        'SODIMM_62': 77,
+        'SODIMM_63': 33,
+        'SODIMM_64': 84,
+        'SODIMM_65': 124,
+        'SODIMM_66': 83,
+        'SODIMM_67': 38,
+        'SODIMM_68': 66,
+        'SODIMM_69': 121,
+        'SODIMM_70': 70,
+        'SODIMM_71': 11,
+        'SODIMM_72': 74,
+        'SODIMM_73': 36,
+        'SODIMM_74': 79,
+        'SODIMM_75': 113,
+        'SODIMM_76': 69,
+        'SODIMM_77': 25,
+        'SODIMM_78': 73,
+        'SODIMM_79': 119,
+        'SODIMM_80': 75,
+        'SODIMM_81': 115,
+        'SODIMM_82': 67,
+        'SODIMM_85': 123,
+        'SODIMM_86': 90,
+        'SODIMM_88': 89,
+        'SODIMM_89': 3,
+        'SODIMM_90': 92,
+        'SODIMM_92': 91,
+        'SODIMM_93': 134,
+        'SODIMM_94': 116,
+        'SODIMM_95': 131,
+        'SODIMM_96': 114,
+        'SODIMM_97': 120,
+        'SODIMM_98': 122,
+        'SODIMM_99': 14,
+        'SODIMM_100': 26,
+        'SODIMM_101': 117,
+        'SODIMM_102': 15,
+        'SODIMM_103': 118,
+        'SODIMM_104': 39,
+        'SODIMM_105': 138,
+        'SODIMM_106': 10,
+        'SODIMM_107': 132,
+        'SODIMM_127': 139,
+        'SODIMM_129': 2,
+        'SODIMM_131': 133,
+        'SODIMM_133': 110,
+        'SODIMM_135': 24,
+        'SODIMM_137': 130,
+        'SODIMM_138': 136,
+        'SODIMM_178': 34,
+        'SODIMM_186': 27,
+        'SODIMM_188': 35,
+        'SODIMM_190': 48,
+        'SODIMM_192': 50,
+        'SODIMM_194': 29,
+        'SODIMM_196': 28
     }
 };
 
 function Gpio() {
     var currentPins;
-    var currentValidBcmPins;
+    // var currentValidBcmPins;
     var exportedInputPins = {};
     var exportedOutputPins = {};
-    var getPinForCurrentMode = getPinRpi;
+    var getPinForCurrentMode = getPinTdx;
     var pollers = {};
 
     this.DIR_IN   = 'in';
@@ -95,28 +122,30 @@ function Gpio() {
     this.DIR_LOW  = 'low';
     this.DIR_HIGH = 'high';
 
-    this.MODE_RPI = 'mode_rpi';
-    this.MODE_BCM = 'mode_bcm';
+    // this.MODE_RPI = 'mode_rpi';
+    // this.MODE_BCM = 'mode_bcm';
 
     this.EDGE_NONE    = 'none';
     this.EDGE_RISING  = 'rising';
     this.EDGE_FALLING = 'falling';
     this.EDGE_BOTH    = 'both';
 
-    /**
+    getPinForCurrentMode = getPinTdx;
+
+     /**
      * Set pin reference mode. Defaults to 'mode_rpi'.
      *
      * @param {string} mode Pin reference mode, 'mode_rpi' or 'mode_bcm'
      */
-    this.setMode = function(mode) {
-        if (mode === this.MODE_RPI) {
-            getPinForCurrentMode = getPinRpi;
-        } else if (mode === this.MODE_BCM) {
-            getPinForCurrentMode = getPinBcm;
-        } else {
-            throw new Error('Cannot set invalid mode');
-        }
-    };
+    // this.setMode = function(mode) {
+    //     if (mode === this.MODE_RPI) {
+    //         getPinForCurrentMode = getPinRpi;
+    //     } else if (mode === this.MODE_BCM) {
+    //         getPinForCurrentMode = getPinBcm;
+    //     } else {
+    //         throw new Error('Cannot set invalid mode');
+    //     }
+    // };
 
     /**
      * Setup a channel for use as an input or output
@@ -166,7 +195,7 @@ function Gpio() {
 
         var pinForSetup;
         async.waterfall([
-            setRaspberryVersion,
+            setTdxModule,
             function(next) {
                 pinForSetup = getPinForCurrentMode(channel);
                 if (!pinForSetup) {
@@ -309,7 +338,7 @@ function Gpio() {
 
         currentPins = undefined;
         currentValidBcmPins = undefined;
-        getPinForCurrentMode = getPinRpi;
+        getPinForCurrentMode = getPinTdx;
         pollers = {}
     };
 
@@ -319,49 +348,49 @@ function Gpio() {
 
 
     // Private functions requring access to state
-    function setRaspberryVersion(cb) {
+    function setTdxModule(cb) {
         if (currentPins) {
             return cb(null);
         }
+        // TODO: implement this (using fw_printenv?)
 
-        fs.readFile('/proc/cpuinfo', 'utf8', function(err, data) {
-            if (err) return cb(err);
+        // fs.readFile('/proc/cpuinfo', 'utf8', function(err, data) {
+        //     if (err) return cb(err);
 
-            // Match the last 4 digits of the number following "Revision:"
-            var match = data.match(/Revision\s*:\s*[0-9a-f]*([0-9a-f]{4})/);
-            var revisionNumber = parseInt(match[1], 16);
-            var pinVersion = (revisionNumber < 4) ? 'v1' : 'v2';
+        //     // Match the last 4 digits of the number following "Revision:"
+        //     var match = data.match(/Revision\s*:\s*[0-9a-f]*([0-9a-f]{4})/);
+        //     var revisionNumber = parseInt(match[1], 16);
+        //     var pinVersion = (revisionNumber < 4) ? 'v1' : 'v2';
 
-            debug(
-                'seen hardware revision %d; using pin mode %s',
-                revisionNumber,
-                pinVersion
-            );
+        //     debug(
+        //         'seen hardware revision %d; using pin mode %s',
+        //         revisionNumber,
+        //         pinVersion
+        //     );
 
-            // Create a list of valid BCM pins for this Raspberry Pi version.
-            // This will be used to validate channel numbers in getPinBcm
-            currentValidBcmPins = []
-            Object.keys(PINS[pinVersion]).forEach(
-              function(pin) {
-                // Lookup the BCM pin for the RPI pin and add it to the list
-                currentValidBcmPins.push(PINS[pinVersion][pin]);
-              }
-            );
+        //     // Create a list of valid BCM pins for this Raspberry Pi version.
+        //     // This will be used to validate channel numbers in getPinBcm
+        //     currentValidBcmPins = []
+        //     Object.keys(PINS[pinVersion]).forEach(
+        //       function(pin) {
+        //         // Lookup the BCM pin for the RPI pin and add it to the list
+        //         currentValidBcmPins.push(PINS[pinVersion][pin]);
+        //       }
+        //     );
 
-            currentPins = PINS[pinVersion];
+            currentPins = PINS[colibri_imx6ull];
 
             return cb(null);
-        });
     };
 
-    function getPinRpi(channel) {
-        return currentPins[channel] + '';
+    function getPinTdx(sodimmnumber) {
+        return currentPins[sodimmnumber] + '';
     };
 
-    function getPinBcm(channel) {
-        channel = parseInt(channel, 10);
-        return currentValidBcmPins.indexOf(channel) !== -1 ? (channel + '') : null;
-    };
+    // function getPinBcm(channel) {
+    //     channel = parseInt(channel, 10);
+    //     return currentValidBcmPins.indexOf(channel) !== -1 ? (channel + '') : null;
+    // };
 
     /**
      * Listen for interrupts on a channel
