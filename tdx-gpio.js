@@ -111,7 +111,6 @@ var PINS = {
 
 function Gpio() {
     var currentPins;
-    // var currentValidBcmPins;
     var exportedInputPins = {};
     var exportedOutputPins = {};
     var getPinForCurrentMode = getPinTdx;
@@ -122,30 +121,12 @@ function Gpio() {
     this.DIR_LOW  = 'low';
     this.DIR_HIGH = 'high';
 
-    // this.MODE_RPI = 'mode_rpi';
-    // this.MODE_BCM = 'mode_bcm';
-
     this.EDGE_NONE    = 'none';
     this.EDGE_RISING  = 'rising';
     this.EDGE_FALLING = 'falling';
     this.EDGE_BOTH    = 'both';
 
     getPinForCurrentMode = getPinTdx;
-
-     /**
-     * Set pin reference mode. Defaults to 'mode_rpi'.
-     *
-     * @param {string} mode Pin reference mode, 'mode_rpi' or 'mode_bcm'
-     */
-    // this.setMode = function(mode) {
-    //     if (mode === this.MODE_RPI) {
-    //         getPinForCurrentMode = getPinRpi;
-    //     } else if (mode === this.MODE_BCM) {
-    //         getPinForCurrentMode = getPinBcm;
-    //     } else {
-    //         throw new Error('Cannot set invalid mode');
-    //     }
-    // };
 
     /**
      * Setup a channel for use as an input or output
@@ -164,17 +145,10 @@ function Gpio() {
             onSetup = edge;
             edge = this.EDGE_NONE;
         }
-
-        channel = parseInt(channel)
+     
         direction = direction || this.DIR_OUT;
         edge = edge || this.EDGE_NONE;
         onSetup = onSetup || function() {};
-
-        if (typeof channel !== 'number') {
-            return process.nextTick(function() {
-                onSetup(new Error('Channel must be a number'));
-            });
-        }
 
         if (direction !== this.DIR_IN && direction !== this.DIR_OUT && direction !== this.DIR_LOW && direction !== this.DIR_HIGH) {
             return process.nextTick(function() {
@@ -337,7 +311,6 @@ function Gpio() {
         this.removeAllListeners();
 
         currentPins = undefined;
-        currentValidBcmPins = undefined;
         getPinForCurrentMode = getPinTdx;
         pollers = {}
     };
@@ -352,45 +325,27 @@ function Gpio() {
         if (currentPins) {
             return cb(null);
         }
-        // TODO: implement this (using fw_printenv?)
+        
+        fs.readFile('/proc/sys/kernel/hostname', 'utf8', function(err,data){
+            if (err) return cb(err);
 
-        // fs.readFile('/proc/cpuinfo', 'utf8', function(err, data) {
-        //     if (err) return cb(err);
+            // JavaScript doesn't like the dashes, replace with underscores to match the object keys defined in PINS
+            var moduleName = data.replace(/-/g, '_');
 
-        //     // Match the last 4 digits of the number following "Revision:"
-        //     var match = data.match(/Revision\s*:\s*[0-9a-f]*([0-9a-f]{4})/);
-        //     var revisionNumber = parseInt(match[1], 16);
-        //     var pinVersion = (revisionNumber < 4) ? 'v1' : 'v2';
+            // hostname output comes with a linebreak at the end. Remove it
+            moduleName = moduleName.replace(/(\r\n|\n|\r)/gm, '');            
+            
 
-        //     debug(
-        //         'seen hardware revision %d; using pin mode %s',
-        //         revisionNumber,
-        //         pinVersion
-        //     );
-
-        //     // Create a list of valid BCM pins for this Raspberry Pi version.
-        //     // This will be used to validate channel numbers in getPinBcm
-        //     currentValidBcmPins = []
-        //     Object.keys(PINS[pinVersion]).forEach(
-        //       function(pin) {
-        //         // Lookup the BCM pin for the RPI pin and add it to the list
-        //         currentValidBcmPins.push(PINS[pinVersion][pin]);
-        //       }
-        //     );
-
-            currentPins = PINS[colibri_imx6ull];
+            currentPins = PINS[moduleName];
 
             return cb(null);
+        });
     };
 
-    function getPinTdx(sodimmnumber) {
-        return currentPins[sodimmnumber] + '';
+    function getPinTdx(sodimmNumber) {
+        return currentPins[sodimmNumber] + '';
     };
 
-    // function getPinBcm(channel) {
-    //     channel = parseInt(channel, 10);
-    //     return currentValidBcmPins.indexOf(channel) !== -1 ? (channel + '') : null;
-    // };
 
     /**
      * Listen for interrupts on a channel
